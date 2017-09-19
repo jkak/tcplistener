@@ -8,9 +8,11 @@ import (
 )
 
 // TCPListener for wrap tcp listener. and control the stop and mutex
+// locked is true when mutex.Lock()
 type TCPListener struct {
 	tcpListener *net.TCPListener
 	stop        chan bool
+	locked      bool
 	mutex       sync.Mutex
 }
 
@@ -20,8 +22,13 @@ func NewTCPListener(lisn net.Listener) (tcpLisn *TCPListener, err error) {
 	if !ok {
 		return nil, errors.New("assert error for base listener")
 	}
+
+	tcpLisn = &TCPListener{}
 	tcpLisn.tcpListener = listener
 	tcpLisn.stop = make(chan bool)
+	tcpLisn.locked = false
+	var m sync.Mutex
+	tcpLisn.mutex = m //new(sync.Mutex)
 	return
 }
 
@@ -83,7 +90,12 @@ func (tl *TCPListener) AcceptTCP() (tcpc *net.TCPConn, err error) {
 // Start to enable mutex
 func (tl *TCPListener) Start() {
 	go func() {
-		tl.mutex.Unlock()
+		// tl.locked for fix bug of directly Unlock here.
+		// bug: "panic: sync: unlock of unlocked mutex"
+		if tl.locked {
+			tl.mutex.Unlock()
+			tl.locked = false
+		}
 	}()
 }
 
@@ -91,6 +103,9 @@ func (tl *TCPListener) Start() {
 func (tl *TCPListener) Stop() {
 	tl.stop <- true
 	go func() {
-		tl.mutex.Lock()
+		if !tl.locked {
+			tl.mutex.Lock()
+			tl.locked = true
+		}
 	}()
 }
