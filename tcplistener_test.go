@@ -9,10 +9,11 @@ import (
 
 var (
 	port = ":8080"
-	name = "Accept:"
 )
 
 func TestTCPListnerAccept(t *testing.T) {
+	var name = "Accept()"
+
 	base, err := net.Listen("tcp", port)
 	if err != nil {
 		t.Fatalf("Listen base err:%s", err)
@@ -24,24 +25,27 @@ func TestTCPListnerAccept(t *testing.T) {
 	tcpLisn.Start()
 	go func() {
 		for {
+			// listener accept request here.
 			newConn, err := tcpLisn.Accept()
 			if err != nil {
-				// I want see the stop signal
-				log.Printf("-- %s err:%s", name, err)
+				// I want see the stop signal status
+				log.Printf("-- %s err : %s", name, err)
 				if tcpLisn.locked {
 					break
 				}
 			}
+			// sleep and Close()
 			if newConn != nil {
 				newConn.Close()
 			}
 		}
 	}()
 
+	// request one time to see the locked status.
 	var dia net.Dialer
 	c, err := dia.Dial("tcp", port)
 	if err != nil {
-		t.Logf("accept() err:%s", err)
+		t.Logf("%s err : %s", name, err)
 	}
 	network := c.LocalAddr().Network()
 	laddr := *c.LocalAddr().(*net.TCPAddr)
@@ -58,7 +62,7 @@ func TestTCPListnerAccept(t *testing.T) {
 		dia.Timeout = time.Millisecond * 20
 		c, err := dia.Dial(network, port)
 		if err != nil {
-			// t.Error("Dial should fail")
+			t.Logf("current dial should be failed")
 			failed++
 			continue
 		}
@@ -66,12 +70,12 @@ func TestTCPListnerAccept(t *testing.T) {
 		// log.Println("port:", addr.Port, laddr.Port, addr.IP.Equal(laddr.IP))
 		if addr.Port == laddr.Port || !addr.IP.Equal(laddr.IP) {
 			failed++
-			// t.Errorf("Dial %v should fail", addr)
+			t.Logf("current dial %v should be failed", addr)
 		}
 		c.Close()
 	}
 	tcpLisn.Stop()
 	time.Sleep(time.Millisecond * 10)
-	log.Printf("== failed : %d, rate: %f\n", failed, float64(failed)/float64(n))
+	log.Printf("-- failed times: %d; fail rate: %f\n", failed, float64(failed)/float64(n))
 	log.Printf("%s lock status: %v\n\n", name, tcpLisn.locked)
 }
