@@ -8,12 +8,12 @@ import (
 )
 
 // TCPListener for wrap tcp listener. and control the stop and mutex
-// locked is true when mutex.Lock()
+// locked is false by default, set to true when Stop() call mutex.Lock()
 type TCPListener struct {
 	tcpListener *net.TCPListener
 	stop        chan bool
 	locked      bool
-	mutex       sync.Mutex
+	mutex       *sync.Mutex
 }
 
 // NewTCPListener new a ptr of TCPListener for given Listener
@@ -27,8 +27,7 @@ func NewTCPListener(lisn net.Listener) (tcpLisn *TCPListener, err error) {
 	tcpLisn.tcpListener = listener
 	tcpLisn.stop = make(chan bool)
 	tcpLisn.locked = false
-	var m sync.Mutex
-	tcpLisn.mutex = m //new(sync.Mutex)
+	tcpLisn.mutex = new(sync.Mutex)
 	return
 }
 
