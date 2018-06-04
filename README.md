@@ -16,6 +16,33 @@ use mutex to Lock listenter when received stop signal.
 
 
 
+### Usage
+
+example
+
+```go
+base, _ := net.Listen("tcp", ":8080")
+tcpLisn, err := NewTCPListener(base)
+if err != nil {
+    t.Fatalf("new Listen err:%s", err)
+}
+tcpLisn.Start()
+
+for {
+    // listener accept request here.
+    newConn, err := tcpLisn.Accept()
+    if err != nil {
+        break
+    }
+    defer newConn.Close()
+  // use newconn here
+}
+```
+
+AcceptTCP() is ok.
+
+
+
 ### Test
 
 ```shell
@@ -31,7 +58,7 @@ go test
 2018/04/15 23:39:42 AcceptTCP() lock status: true
 
 PASS
-ok  	github.com/jungle85gopy/tcplistener	12.499s
+ok  	github.com/jkak/tcplistener	12.499s
 
 ```
 
