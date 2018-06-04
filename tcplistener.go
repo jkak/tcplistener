@@ -17,22 +17,22 @@ type TCPListener struct {
 }
 
 // NewTCPListener new a ptr of TCPListener for given Listener
-func NewTCPListener(lisn net.Listener) (tcpLisn *TCPListener, err error) {
+func NewTCPListener(lisn net.Listener) (*TCPListener, error) {
 	listener, ok := lisn.(*net.TCPListener)
 	if !ok {
 		return nil, errors.New("assert error for base listener")
 	}
 
-	tcpLisn = &TCPListener{}
+	tcpLisn := &TCPListener{}
 	tcpLisn.tcpListener = listener
 	tcpLisn.stop = make(chan bool)
 	tcpLisn.locked = false
 	tcpLisn.mutex = new(sync.Mutex)
-	return
+	return tcpLisn, nil
 }
 
 // Accept accept a new net listener
-func (tl *TCPListener) Accept() (conn net.Conn, err error) {
+func (tl *TCPListener) Accept() (net.Conn, error) {
 	tl.mutex.Lock()
 	defer tl.mutex.Unlock()
 
@@ -47,19 +47,19 @@ func (tl *TCPListener) Accept() (conn net.Conn, err error) {
 		// set timeout before accept conn
 		tl.tcpListener.SetDeadline(time.Now().Add(time.Second))
 
-		conn, err = tl.tcpListener.Accept()
+		conn, err := tl.tcpListener.Accept()
 		if err != nil {
 			errNet, ok := err.(net.Error)
 			if ok && errNet.Timeout() && errNet.Temporary() {
 				continue // continue while timeout
 			}
 		}
-		return
+		return conn, err
 	}
 }
 
 // AcceptTCP accept a new tcp listener
-func (tl *TCPListener) AcceptTCP() (tcpc *net.TCPConn, err error) {
+func (tl *TCPListener) AcceptTCP() (*net.TCPConn, error) {
 	tl.mutex.Lock()
 	defer tl.mutex.Unlock()
 
@@ -75,14 +75,14 @@ func (tl *TCPListener) AcceptTCP() (tcpc *net.TCPConn, err error) {
 		// set timeout before accept conn
 		tl.tcpListener.SetDeadline(time.Now().Add(time.Second))
 
-		tcpc, err = tl.tcpListener.AcceptTCP()
+		tcpc, err := tl.tcpListener.AcceptTCP()
 		if err != nil {
 			errNet, ok := err.(net.Error)
 			if ok && errNet.Timeout() && errNet.Temporary() {
 				continue // continue while timeout
 			}
 		}
-		return
+		return tcpc, err
 	}
 }
 
